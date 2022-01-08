@@ -910,3 +910,10 @@ func (s *Session) CloseWithCode(closeCode int) (err error) {
 
 	return
 }
+
+func (s *Session) WriteDataToGatewayWs(data interface{}) error {
+	s.wsMutex.Lock()
+	err := s.wsConn.WriteJSON(data)
+	s.wsMutex.Unlock()
+	return err
+}
