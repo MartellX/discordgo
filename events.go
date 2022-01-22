@@ -272,6 +272,29 @@ type VoiceStateUpdate struct {
 	BeforeUpdate *VoiceState `json:"-"`
 }
 
+type StreamCreate struct {
+	ViewerIds   []string `json:"viewer_ids"`
+	StreamKey   string   `json:"stream_key"`
+	Region      string   `json:"region"`
+	Paused      bool     `json:"paused"`
+	RtcServerId string   `json:"rtc_server_id"`
+}
+
+type StreamServerUpdate struct {
+	Token     string `json:"token"`
+	StreamKey string `json:"stream_key"`
+	GuildID   string `json:"guild_id"`
+	Endpoint  string `json:"endpoint"`
+}
+
+type StreamStateUpdate struct {
+	ViewerIds []string `json:"viewer_ids"`
+	StreamKey string   `json:"stream_key"`
+	Region    string   `json:"region"`
+	Paused    bool     `json:"paused"`
+	GuildId   string   `json:"guild_id"`
+}
+
 // MessageDeleteBulk is the data for a MessageDeleteBulk event
 type MessageDeleteBulk struct {
 	Messages  []string `json:"ids"`

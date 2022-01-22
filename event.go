@@ -232,6 +232,11 @@ func (s *Session) onInterface(i interface{}) {
 		go s.onVoiceServerUpdate(t)
 	case *VoiceStateUpdate:
 		go s.onVoiceStateUpdate(t)
+	case *StreamCreate:
+		go s.onStreamCreate(t)
+	case *StreamServerUpdate:
+		go s.onStreamServerUpdate(t)
+
 	}
 	err := s.State.OnInterface(s, i)
 	if err != nil {

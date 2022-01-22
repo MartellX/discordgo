@@ -756,6 +756,139 @@ func (s *Session) onVoiceServerUpdate(st *VoiceServerUpdate) {
 	}
 }
 
+// ------------------------------------------------------------------------------------------------
+// Code related to video connections that initiate over the data websocket
+// ------------------------------------------------------------------------------------------------
+
+type createStreamData struct {
+	ChannelId       string  `json:"channel_id"`
+	GuildId         string  `json:"guild_id"`
+	PreferredRegion *string `json:"preferred_region"`
+	Type            string  `json:"type"`
+}
+
+type createStreamOp struct {
+	Op   int              `json:"op"`
+	Data createStreamData `json:"d"`
+}
+
+type createStreamKeyData struct {
+	Paused    bool   `json:"paused"`
+	StreamKey string `json:"stream_key"`
+}
+
+type createStreamKeyOp struct {
+	Op   int                 `json:"op"`
+	Data createStreamKeyData `json:"d"`
+}
+
+func (s *Session) ChannelVideoStreamStart(gID, cID string) (video *VideoConnection, err error) {
+	voice, err := s.ChannelVoiceJoin(gID, cID, true, true)
+	if err != nil {
+		return nil, err
+	}
+
+	s.RLock()
+	video = s.VideoConnection
+	s.RUnlock()
+
+	if video == nil {
+		video = &VideoConnection{}
+		s.Lock()
+		s.VideoConnection = video
+		s.Unlock()
+	}
+
+	video.Lock()
+	video.GuildID = gID
+	video.ChannelID = cID
+	video.UserID = s.State.User.ID
+	video.session = s
+	video.sessionID = voice.sessionID
+	video.Unlock()
+
+	data := createStreamOp{
+		Op: 18,
+		Data: createStreamData{
+			ChannelId:       cID,
+			GuildId:         gID,
+			PreferredRegion: nil,
+			Type:            "guild",
+		},
+	}
+	s.wsMutex.Lock()
+	err = s.wsConn.WriteJSON(data)
+	s.wsMutex.Unlock()
+	if err != nil {
+		return nil, err
+	}
+
+	keyData := createStreamKeyOp{
+		Op: 22,
+		Data: createStreamKeyData{
+			Paused:    false,
+			StreamKey: fmt.Sprintf("%s:%s:%s", gID, cID, s.State.User.ID),
+		},
+	}
+	s.wsMutex.Lock()
+	err = s.wsConn.WriteJSON(keyData)
+	s.wsMutex.Unlock()
+	if err != nil {
+		return nil, err
+	}
+
+	// doesn't exactly work perfect yet.. TODO
+	err = video.waitUntilConnected()
+	if err != nil {
+		s.log(LogWarning, "error waiting for voice to connect, %s", err)
+		video.Close()
+		return
+	}
+
+	return video, nil
+}
+
+func (s *Session) onStreamCreate(st *StreamCreate) {
+	video := s.VideoConnection
+	if video == nil {
+		return
+	}
+
+	video.serverID = st.RtcServerId
+}
+
+func (s *Session) onStreamServerUpdate(st *StreamServerUpdate) {
+
+	s.log(LogInformational, "called")
+
+	s.RLock()
+	video := s.VideoConnection
+	s.RUnlock()
+
+	// If no VoiceConnection exists, just skip this
+	if video == nil {
+		return
+	}
+
+	// If currently connected to voice ws/udp, then disconnect.
+	// Has no effect if not connected.
+	video.Close()
+
+	// Store values for later use
+	video.Lock()
+	video.token = st.Token
+	video.endpoint = st.Endpoint
+	video.GuildID = st.GuildID
+	video.StreamKey = st.StreamKey
+	video.Unlock()
+
+	// Open a connection to the voice server
+	err := video.open()
+	if err != nil {
+		s.log(LogError, "onStreamServerUpdate voice.open, %s", err)
+	}
+}
+
 type identifyOp struct {
 	Op   int      `json:"op"`
 	Data Identify `json:"d"`

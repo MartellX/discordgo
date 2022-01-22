@@ -90,6 +90,15 @@ func (v *VoiceConnection) log(msgL int, format string, a ...interface{}) {
 	msglog(msgL, 2, format, a...)
 }
 
+func (v *VideoConnection) log(msgL int, format string, a ...interface{}) {
+
+	if msgL > v.LogLevel {
+		return
+	}
+
+	msglog(msgL, 2, format, a...)
+}
+
 // printJSON is a helper function to display JSON data in a easy to read format.
 /* NOT USED ATM
 func printJSON(body []byte) {

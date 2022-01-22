@@ -51,6 +51,9 @@ const (
 	userUpdateEventType               = "USER_UPDATE"
 	voiceServerUpdateEventType        = "VOICE_SERVER_UPDATE"
 	voiceStateUpdateEventType         = "VOICE_STATE_UPDATE"
+	streamCreateEventType             = "STREAM_CREATE"
+	streamServerUpdateEventType       = "STREAM_SERVER_UPDATE"
+	streamStateUpdateEventType        = "STREAM_UPDATE"
 	webhooksUpdateEventType           = "WEBHOOKS_UPDATE"
 )
 
@@ -914,6 +917,66 @@ func (eh voiceStateUpdateEventHandler) Handle(s *Session, i interface{}) {
 	}
 }
 
+// voiceServerUpdateEventHandler is an event handler for VoiceServerUpdate events.
+type streamCreateEventHandler func(*Session, *StreamCreate)
+
+// Type returns the event type for VoiceServerUpdate events.
+func (eh streamCreateEventHandler) Type() string {
+	return streamCreateEventType
+}
+
+// New returns a new instance of VoiceServerUpdate.
+func (eh streamCreateEventHandler) New() interface{} {
+	return &StreamCreate{}
+}
+
+// Handle is the handler for VoiceServerUpdate events.
+func (eh streamCreateEventHandler) Handle(s *Session, i interface{}) {
+	if t, ok := i.(*StreamCreate); ok {
+		eh(s, t)
+	}
+}
+
+// voiceServerUpdateEventHandler is an event handler for VoiceServerUpdate events.
+type streamServerUpdateEventHandler func(*Session, *StreamServerUpdate)
+
+// Type returns the event type for VoiceServerUpdate events.
+func (eh streamServerUpdateEventHandler) Type() string {
+	return streamServerUpdateEventType
+}
+
+// New returns a new instance of VoiceServerUpdate.
+func (eh streamServerUpdateEventHandler) New() interface{} {
+	return &StreamServerUpdate{}
+}
+
+// Handle is the handler for VoiceServerUpdate events.
+func (eh streamServerUpdateEventHandler) Handle(s *Session, i interface{}) {
+	if t, ok := i.(*StreamServerUpdate); ok {
+		eh(s, t)
+	}
+}
+
+// voiceStateUpdateEventHandler is an event handler for VoiceStateUpdate events.
+type streamStateUpdateEventHandler func(*Session, *StreamStateUpdate)
+
+// Type returns the event type for VoiceStateUpdate events.
+func (eh streamStateUpdateEventHandler) Type() string {
+	return streamStateUpdateEventType
+}
+
+// New returns a new instance of VoiceStateUpdate.
+func (eh streamStateUpdateEventHandler) New() interface{} {
+	return &StreamStateUpdate{}
+}
+
+// Handle is the handler for VoiceStateUpdate events.
+func (eh streamStateUpdateEventHandler) Handle(s *Session, i interface{}) {
+	if t, ok := i.(*StreamStateUpdate); ok {
+		eh(s, t)
+	}
+}
+
 // webhooksUpdateEventHandler is an event handler for WebhooksUpdate events.
 type webhooksUpdateEventHandler func(*Session, *WebhooksUpdate)
 
@@ -1026,6 +1089,12 @@ func handlerForInterface(handler interface{}) EventHandler {
 		return voiceServerUpdateEventHandler(v)
 	case func(*Session, *VoiceStateUpdate):
 		return voiceStateUpdateEventHandler(v)
+	case func(*Session, *StreamCreate):
+		return streamCreateEventHandler(v)
+	case func(*Session, *StreamServerUpdate):
+		return streamServerUpdateEventHandler(v)
+	case func(*Session, *StreamStateUpdate):
+		return streamStateUpdateEventHandler(v)
 	case func(*Session, *WebhooksUpdate):
 		return webhooksUpdateEventHandler(v)
 	}
@@ -1074,5 +1143,8 @@ func init() {
 	registerInterfaceProvider(userUpdateEventHandler(nil))
 	registerInterfaceProvider(voiceServerUpdateEventHandler(nil))
 	registerInterfaceProvider(voiceStateUpdateEventHandler(nil))
+	registerInterfaceProvider(streamCreateEventHandler(nil))
+	registerInterfaceProvider(streamServerUpdateEventHandler(nil))
+	registerInterfaceProvider(streamStateUpdateEventHandler(nil))
 	registerInterfaceProvider(webhooksUpdateEventHandler(nil))
 }
